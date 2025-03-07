@@ -38,9 +38,13 @@
 
   let social(icon, link_prefix, username) = [
     #if emphasize [
-      #emph[#text(socials-color)[#fa-icon(icon) #link(link_prefix + username)[#username]]]
+      #emph[#text(socials-color)[#fa-icon(icon) #link(
+            link_prefix + username,
+          )[#username]]]
     ] else [
-      #text(socials-color)[#fa-icon(icon) #link(link_prefix + username)[#username]]
+      #text(socials-color)[#fa-icon(icon) #link(
+          link_prefix + username,
+        )[#username]]
     ]
   ]
 
@@ -52,7 +56,7 @@
     ]
   ]
 
-  let address-social(icon, body) = [
+  let social-no-link(icon, body) = [
     #if emphasize [
       #emph[#text(socials-color)[#fa-icon(icon) #body]]
     ] else [
@@ -69,28 +73,34 @@
     x: ("x-twitter", "https://twitter.com/"),
     bluesky: ("bluesky", "https://bsky.app/profile/"),
   )
+  let socialsNoLinkDict = (
+    address: "house",
+  )
 
   let socialsList = ()
-  for entry in socials {
-    assert(type(entry) == array, message: "Invalid social entry type.")
-    assert(entry.len() == 2, message: "Invalid social entry length.")
-    let (key, value) = entry
-    if type(value) == str {
-      if (key == "address") {
-        socialsList.push(address-social("house", value))
-      } else {
-        if key not in socialsDict {
-          panic("Unknown social key: " + key)
-        }
+  for (key, value) in socials {
+    if type(value) == content or type(value) == str {
+      if key in socialsNoLinkDict {
+        let icon = socialsNoLinkDict.at(key)
+        socialsList.push(social-no-link(icon, value))
+      } else if key in socialsDict {
         let (icon, linkPrefix) = socialsDict.at(key)
         socialsList.push(social(icon, linkPrefix, value))
+      } else {
+        panic("Unknown social key: " + key)
       }
     } else if type(value) == array {
-      assert(value.len() == 3, message: "Invalid social entry: " + key)
-      let (icon, dest, body) = value
-      socialsList.push(custom-social(icon, dest, body))
+      if value.len() == 3 {
+        let (icon, dest, body) = value
+        socialsList.push(custom-social(icon, dest, body))
+      } else if value.len() == 2 {
+        let (icon, body) = value
+        socialsList.push(social-no-link(icon, body))
+      } else {
+        panic("Invalid social entry: " + key)
+      }
     } else {
-      panic("Invalid social entry: " + entry)
+      panic("Invalid social entry: " + key)
     }
   }
 
@@ -256,10 +266,12 @@
   )
   cv-line(
     date,
-    elements.slice(0, -1).join(", ") + linebreak() + text(
-      size: 0.9em,
-      elements.at(-1),
-    ),
+    elements.slice(0, -1).join(", ")
+      + linebreak()
+      + text(
+        size: 0.9em,
+        elements.at(-1),
+      ),
   )
 }
 
